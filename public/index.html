@@ -4,14 +4,19 @@
 <head>
     <link rel="stylesheet" href="styles.css">
     <meta charset="utf-8">
-    <title>Step.8～11</title>
+    <title>しりとりゲーム</title>
 </head>
 
 <body>
-    <h1>しりとり</h1>
+    <h1>しりとりゲーム</h1>
     <p id="previousWord"></p>
+    <p id="score"></p>
+    <p id="totalLength"></p>
+
     <input id="nextWordInput" type="text" />
     <button id="nextWordSendButton">送信</button>
+
+    <select id="recentWords" size="10"></select>
 
     <script type="module">
         window.onload = async (event) => {
@@ -30,11 +35,18 @@
             const previousWord = await response.text();
 
             const para = document.querySelector("#previousWord");
-            para.innerText = `前の単語：${previousWord}`
+            para.innerText = `前の単語：${previousWord}`;
+
+            const para2 = document.querySelector("#score");
+            para2.innerText = `回数：0`;
+
+            const para3 = document.querySelector("#totalLength");
+            para3.innerText = `文字数の合計：0`;
         };
 
         document.querySelector("#nextWordSendButton").onclick = async (event) => {
             const nextWord = document.querySelector("#nextWordInput").value;
+
             const response = await fetch("/shiritori", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -42,15 +54,52 @@
             });
 
             if (response.status / 100 !== 2) {
-                alert(await response.text());
+                if (response.status === 418) {
+                    alert(await response.text());
+
+                    const para = document.querySelector("#previousWord");
+                    para.innerText = `前の単語：しりとり`;
+
+                    const select = document.querySelector("#recentWords");
+                    removeAllChildNodes(select);
+                } else {
+                    alert(await response.text());
+                }
+
                 return;
             }
 
-            const previousWord = await response.text();
+            const str = await response.text();
+            updateElements(str)
+        };
+
+        function updateElements(str) {
+            let array = str.split(",");
+            let score = array[0];
+            let totalLength = array[1];
+            let previousWord = array[2];
 
             const para = document.querySelector("#previousWord");
             para.innerText = `前の単語：${previousWord}`;
-        };
+
+            let para2 = document.getElementById("score");
+            para2.innerText = `回数：${score}`;
+
+            let para3 = document.getElementById("totalLength");
+            para3.innerText = `文字数の合計：${totalLength}`;
+
+            let select = document.getElementById("recentWords");
+            let option = document.createElement("option");
+            option.text = `${score}：${previousWord}`;
+            option.value = score;
+            select.appendChild(option);
+        }
+
+        function removeAllChildNodes(parent) {
+            while (parent.firstChild) {
+                parent.removeChild(parent.firstChild);
+            }
+        }
     </script>
 </body>
 
